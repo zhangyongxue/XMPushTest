@@ -1,19 +1,77 @@
 apply plugin: 'com.android.application'
 
+def getDate() {
+    def date = new Date()
+    def formattedDate = date.format('yyyyMMddHHmm')
+    return formattedDate
+}
+
+def verCode = 14
+
 android {
     compileSdkVersion 27
     defaultConfig {
         applicationId "zyx.xmpushtest"
         minSdkVersion 26
         targetSdkVersion 27
-        versionCode 1
+        versionCode verCode
         versionName "1.0"
-//        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        versionName APP_VERSION
+        flavorDimensions "default"
+    }
+    signingConfigs {
+        release {
+            keyAlias 'xmpushtest'
+            keyPassword ALIAS_PASSWORD
+            storeFile file('/Users/aculearn/Aculearn/WorkSpaceEx/MiPush_Client_Android_20180613/XMPushTest/app/src/main/resources/keystore/xmpushtest.keystore')
+            storePassword STORE_PASSWORD
+        }
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
+
+    //渠道Flavors
+    productFlavors {
+        xiaomi {
+            manifestPlaceholders = [UMENG_CHANNEL_VALUE: "xiaomi"]
+        }
+        wandoujia {
+            manifestPlaceholders = [UMENG_CHANNEL_VALUE:    "wandoujia"]
+        }
+    }
+
+    //修改生成的apk名字及输出文件夹
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            //新名字
+            def newName
+            //时间戳
+            def timeNow
+            //输出文件夹
+            def outDirectory
+            //是否为Jenkins打包，输出路径不同
+            if ("true".equals(IS_JENKINS)) {
+                //BUILD_PATH为服务器输出路径
+                timeNow = BUILD_TIME
+                outDirectory = BUILD_PATH_JENKINS
+                //JKApp-v1.0.1-xiaomi-release.apk
+                newName = APPNAME+"-v"+APP_VERSION + '-' + variant.productFlavors[0].name + '-' + variant.buildType.name + '.apk'
+            } else {
+                //本机打包输出在本机路径
+                timeNow = getDate()
+                outDirectory = BUILD_PATH_LOCAL
+                newName = APPNAME+"-v"+APP_VERSION + '-' + variant.productFlavors[0].name + '-' + variant.buildType.name + '.apk'
+            }
+//            output.outputFile = new File(outDirectory+"/"+timeNow, newName)
+            outputFileName = outDirectory + '_' + timeNow + '_' + newName
         }
     }
 }
